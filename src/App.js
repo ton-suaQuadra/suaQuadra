@@ -13,9 +13,16 @@ import { contactPost } from "./services/contatoService";
 function App() {
   const [contato, setContato] = useState({});
   const [showMsg, setShowMsg] = useState(false);
+  const [showError, showSetError] = useState(false);
+  const emailPattern = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/;
 
   const handleChande = (event) => {
     const { value, name } = event.target;
+    if (emailPattern.test(value) || value === "") {
+      showSetError(false);
+    } else {
+      showSetError(true);
+    }
     setContato({
       ...contato,
       [name]: value,
@@ -23,9 +30,22 @@ function App() {
   };
 
   const handleSubmit = async () => {
-    await contactPost(contato);
-    setContato({});
-    setShowMsg(true);
+    try {
+      const { error, data } = await contactPost(contato);
+      if (!error) {
+        setContato({});
+        setShowMsg(true);
+        return {
+          error: false,
+          data: data,
+        };
+      }
+    } catch (e) {
+      return {
+        err: true,
+        error: e.response?.data || "Erro inesperado.",
+      };
+    }
   };
 
   return (
@@ -34,7 +54,12 @@ function App() {
       <Hero>
         <Title>quia dolor sit amet,</Title>
         <Slogan>Neque porro quisquam est qui dolorem ipsum</Slogan>
-        {showMsg ? (<ToastMsg close={showMsg} setClose={setShowMsg} />) : ""}
+        {showError ? <MsgError>Email inválido!</MsgError> : ""}
+        {showMsg && !showError ? (
+          <ToastMsg close={showMsg} setClose={setShowMsg} />
+        ) : (
+          ""
+        )}
         <Cadastro>
           <Input
             type="text"
@@ -43,7 +68,7 @@ function App() {
             placeholder="Digite o seu melhor email:"
             onChange={handleChande}
           />
-            <Btn onClick={handleSubmit}>Enviar</Btn>
+          <Btn onClick={handleSubmit}>Enviar</Btn>
         </Cadastro>
       </Hero>
       <Propaganda>
@@ -107,7 +132,7 @@ const Title = styled.div`
   color: #fff;
 
   @media (min-width: 800px) and (max-width: 1024px) {
-    font-size: 2.5rem; 
+    font-size: 2.5rem;
   }
 
   @media (min-width: 1080px) and (max-width: 1920px) {
@@ -128,6 +153,16 @@ const Slogan = styled.div`
   @media (min-width: 1080px) and (max-width: 1920px) {
     font-size: 1.7rem;
   }
+`;
+
+const MsgError = styled.p`
+  font-size: 1.2rem;
+  color: #fff;
+  width: 133px;
+  height: 27px;
+  text-align: center;
+  background-color: #323232;
+  border-radius: 5px;
 `;
 
 const Cadastro = styled.div`
